@@ -6,7 +6,10 @@ const port = 3000;
 
 app.use(express.json());
 
-// Issue 1 - View all transactions
+app.get("/", (req, res) => {
+  res.send("Internet Bank API is running");
+});
+
 app.get("/transactions", (req, res) => {
   res.json(transactions);
 });
