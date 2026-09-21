@@ -10,6 +10,7 @@ export type Transaction = {
 export type Classification = {
   id: number;
   name: string;
+  recipients: string[];
 };
 
 const transactionsFile = new URL(
