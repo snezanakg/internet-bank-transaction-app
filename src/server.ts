@@ -14,6 +14,23 @@ app.get("/transactions", (req, res) => {
   res.json(transactions);
 });
 
+app.put("/transaction/:id", (req, res) => {
+  const transactionId = parseInt(req.params.id!);
+  const transaction = transactions.find((t) => t.id === transactionId);
+  if (!transaction) {
+    return res.status(404).json({ message: "Transaction not found" });
+  }
+  transaction.date = req.body.date || transaction.date;
+  transaction.recipient = req.body.recipient || transaction.recipient;
+  transaction.amount = req.body.amount || transaction.amount;
+  res.json(transaction);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+
+
+
+
