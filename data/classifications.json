@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Food"
+  },
+  {
+    "id": 2,
+    "name": "Income"
+  },
+  {
+    "id": 3,
+    "name": "Transport"
+  },
+  {
+    "id": 4,
+    "name": "Shopping"
+  },
+  {
+    "id": 5,
+    "name": "Bills"
+  },
+  {
+    "id": 6,
+    "name": "Other"
+  }
+]
