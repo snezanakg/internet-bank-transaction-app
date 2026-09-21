@@ -3,9 +3,8 @@ import { readFileSync } from "node:fs";
 export type Transaction = {
   id: number;
   date: string;
-  description: string;
+  recipient: string;
   amount: number;
-  classification: string;
 };
 
 export type Classification = {
