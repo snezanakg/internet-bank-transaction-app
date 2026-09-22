@@ -33,9 +33,19 @@ app.get("/", (req, res) => {
   res.send("Internet Bank API is running");
 });
 
-// Get all transactions
-app.get("/transactions", (req, res) => {
-  res.json(transactions);
+// Get all transactions with date filtering
+app.get("/transactions", (req: Request, res: Response) => {
+  let result = transactions;
+  const { from, to } = req.query;
+
+  
+  if (typeof from === "string" && typeof to === "string") {
+    result = transactions.filter((t) => {
+      return t.date >= from && t.date <= to;
+    });
+  }
+
+  res.json(result);
 });
 
 // Get one transaction
