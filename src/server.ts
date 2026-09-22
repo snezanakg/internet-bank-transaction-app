@@ -145,6 +145,12 @@ app.delete("/transactions/:id", (req, res) => {
   });
 });
 
+
+// Get all classifications
+app.get("/classifications", (req, res) => {
+  res.json(classifications);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
