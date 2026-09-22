@@ -8,9 +8,8 @@ export type Transaction = {
 };
 
 export type Classification = {
-  id: number;
-  name: string;
-  recipients: string[];
+    recipient: string;
+  classification: string;
 };
 
 const transactionsFile = new URL(
