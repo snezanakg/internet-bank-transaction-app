@@ -5,6 +5,7 @@ export type Transaction = {
   date: string;
   recipient: string;
   amount: number;
+  classification?: string;
 };
 
 export type Classification = {
