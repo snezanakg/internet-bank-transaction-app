@@ -5,12 +5,12 @@ export type Transaction = {
   date: string;
   recipient: string;
   amount: number;
+  classification?: string;
 };
 
 export type Classification = {
-  id: number;
-  name: string;
-  recipients: string[];
+    recipient: string;
+  classification: string;
 };
 
 const transactionsFile = new URL(

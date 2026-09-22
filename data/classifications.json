@@ -1,32 +1,14 @@
 [
   {
-    "id": 1,
-    "name": "Food",
-    "recipients": ["ICA", "Coop", "Willys"]
+    "recipient": "ICA",
+    "classification": "Food"
   },
   {
-    "id": 2,
-    "name": "Transport",
-    "recipients": ["SL", "Västtrafik", "SJ"]
+    "recipient": "SL",
+    "classification": "Transport"
   },
   {
-    "id": 3,
-    "name": "Income",
-    "recipients": ["Employer"]
-  },
-  {
-    "id": 4,
-    "name": "Shopping",
-    "recipients": ["H&M", "IKEA", "Zara"]
-  },
-  {
-    "id": 5,
-    "name": "Bills",
-    "recipients": ["Telia", "Telenor", "Vattenfall"]
-  },
-  {
-    "id": 6,
-    "name": "Other",
-    "recipients": []
+    "recipient": "Employer",
+    "classification": "Income"
   }
 ]
