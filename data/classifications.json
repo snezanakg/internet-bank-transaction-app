@@ -1,26 +1,14 @@
 [
   {
-    "id": 1,
-    "name": "Food"
+    "recipient": "ICA",
+    "classification": "Food"
   },
   {
-    "id": 2,
-    "name": "Income"
+    "recipient": "SL",
+    "classification": "Transport"
   },
   {
-    "id": 3,
-    "name": "Transport"
-  },
-  {
-    "id": 4,
-    "name": "Shopping"
-  },
-  {
-    "id": 5,
-    "name": "Bills"
-  },
-  {
-    "id": 6,
-    "name": "Other"
+    "recipient": "Employer",
+    "classification": "Income"
   }
 ]
