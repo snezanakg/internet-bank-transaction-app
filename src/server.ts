@@ -27,6 +27,10 @@ app.get("/transactions", (req, res) => {
   res.json(transactions);
 });
 
+app.get("/classifications", (req, res) => {
+    res.json(classifications);
+});
+
 app.put("/transactions/:id", (req, res) => {
   const transactionId = parseInt(req.params.id!);
   const transaction = transactions.find((t) => t.id === transactionId);
