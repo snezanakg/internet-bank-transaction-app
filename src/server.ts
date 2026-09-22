@@ -1,5 +1,5 @@
 import express from "express";
-import { transactions } from "./data.js";
+import transactions from "../data/transactions.json" with { type: "json" };
 
 const app = express();
 const port = 3000;
@@ -14,7 +14,7 @@ app.get("/transactions", (req, res) => {
   res.json(transactions);
 });
 
-app.put("/transaction/:id", (req, res) => {
+app.put("/transactions/:id", (req, res) => {
   const transactionId = parseInt(req.params.id!);
   const transaction = transactions.find((t) => t.id === transactionId);
   if (!transaction) {
@@ -24,6 +24,17 @@ app.put("/transaction/:id", (req, res) => {
   transaction.recipient = req.body.recipient || transaction.recipient;
   transaction.amount = req.body.amount || transaction.amount;
   res.json(transaction);
+});
+
+app.delete("/transactions/:id", (req, res) => {
+  const transactionId = parseInt(req.params.id!);
+  const index = transactions.findIndex((t) => t.id === transactionId);
+  if (index === -1) {
+    return res.status(404).json({ message: "Transaction not found" });
+  }
+  transactions.splice(index, 1);
+
+  res.json({ message: "Transaction deleted successfully!" });
 });
 
 app.listen(port, () => {
