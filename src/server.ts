@@ -1,16 +1,11 @@
 
 import express from "express";
-import { transactions } from "./data.js
-
-import express from "express";
-
 import type { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { transactions, classifications, Transaction, Classification } from "./data";
 
 
-import transactions from "../data/transactions.json" with { type: "json" };
 
 
 const app = express();
@@ -27,9 +22,16 @@ app.get("/transactions", (req, res) => {
   res.json(transactions);
 });
 
-app.put("/transactions/:id", (req, res) => {
-  const transactionId = parseInt(req.params.id!);
-  const transaction = transactions.find((t) => t.id === transactionId);
+app.put("/transactions/:id", (req: Request, res: Response) => {
+  const transactionId = parseInt(req.params.id as string);
+
+  if (isNaN(transactionId)) {
+    return res.status(400).json({
+      error: "Invalid transaction ID format. Must be a number."
+    });
+  }
+
+  const transaction = transactions.find((t: Transaction) => t.id === transactionId);
   if (!transaction) {
     return res.status(404).json({ message: "Transaction not found" });
   }
@@ -37,17 +39,35 @@ app.put("/transactions/:id", (req, res) => {
   transaction.recipient = req.body.recipient || transaction.recipient;
   transaction.amount = req.body.amount || transaction.amount;
   res.json(transaction);
+
+  saveTransactions(transactions);
+  return res.status(200).json({
+    message: "Transaction updated successfully!",
+    transaction
+  });
 });
 
-app.delete("/transactions/:id", (req, res) => {
-  const transactionId = parseInt(req.params.id!);
-  const index = transactions.findIndex((t) => t.id === transactionId);
+
+app.delete("/transactions/:id", (req: Request, res: Response) => {
+  const transactionId = parseInt(req.params.id as string);
+
+  if (isNaN(transactionId)) {
+    return res.status(400).json({
+      error: "Invalid transaction ID format. Must be a number."
+    });
+  }
+
+  const index = transactions.findIndex((t: Transaction) => t.id === transactionId);
   if (index === -1) {
     return res.status(404).json({ message: "Transaction not found" });
   }
   transactions.splice(index, 1);
 
-  res.json({ message: "Transaction deleted successfully!" });
+  saveTransactions(transactions);
+
+  return res.status(200).json({
+    message: "Transaction deleted successfully!"
+  });
 });
 
 app.listen(port, () => {
@@ -62,47 +82,47 @@ app.use(express.json());
 const transactionsFilePath = path.join(__dirname, "../data/transactions.json");
 
 const saveTransactions = (allTransactions: Transaction[]) => {
-    fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
+  fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
 };
 
 
 app.post('/transactions', (req: Request, res: Response) => {
-    const { date, recipient, amount } = req.body;
+  const { date, recipient, amount } = req.body;
 
-    if (!date || !recipient || !amount) {
-        return res.status(400).json({ error: "Date, recipient and amount are required." });
+  if (!date || !recipient || !amount) {
+    return res.status(400).json({ error: "Date, recipient and amount are required." });
+  }
+
+  const currentTransactions = transactions;
+
+  const newId = transactions.length > 0 ? Math.max(...transactions.map((t: Transaction) => t.id)) + 1 : 1;
+
+  let classification = "Unknown";
+
+  if (amount < 0) {
+    const found = classifications.find(
+      (c: Classification) => c.recipient.toLowerCase() === recipient.toLowerCase()
+    );
+    if (found) {
+      classification = found.classification;
     }
-
-    const currentTransactions = transactions;
-
-    const newId = transactions.length > 0 ? Math.max(...transactions.map((t: Transaction) => t.id)) + 1 : 1;
-
-    let classification = "Unknown";
-
-    if (amount < 0) {
-        const found = classifications.find(
-            (c: Classification) => c.recipient.toLowerCase() === recipient.toLowerCase()
-        );
-        if (found) {
-            classification = found.classification;
-        }
-    } else {
-        classification = "—";
-    }
+  } else {
+    classification = "—";
+  }
 
 
 
-    const newTransaction: Transaction = {
-        id: newId,
-        date: req.body.date,
-        recipient: req.body.recipient,
-        amount: req.body.amount,
-        classification: classification
+  const newTransaction: Transaction = {
+    id: newId,
+    date: req.body.date,
+    recipient: req.body.recipient,
+    amount: req.body.amount,
+    classification: classification
 
-    };
-    currentTransactions.push(newTransaction);
-    saveTransactions(currentTransactions);
-    res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
+  };
+  currentTransactions.push(newTransaction);
+  saveTransactions(currentTransactions);
+  res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
 
 });
 
@@ -119,7 +139,7 @@ app.post('/transactions', (req: Request, res: Response) => {
 
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
 
 
