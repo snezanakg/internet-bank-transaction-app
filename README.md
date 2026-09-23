@@ -50,9 +50,15 @@ Open a NEW terminal and type in:
 
 ## 5. How to use the terminal application
 
-???
-Explain the available menu options.
+We descided to have these options in the CLI:
 
+1. View transactions
+2. View one transaction
+3. Delete transaction
+4. Add Transaction
+5. Update transaction
+6. Filter transactions by date
+7. Exit
 ## 6. Important Decisions
 
 Explain decisions you made when the requirements were unclear.
