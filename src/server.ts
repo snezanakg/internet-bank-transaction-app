@@ -1,11 +1,9 @@
 
-
-
-
-
 import express from "express";
 import type { Request, Response } from "express";
 import fs from "fs";
+import path from "path";
+
 
 import { transactions, classifications } from "./data.js";
 import type { Transaction, Classification } from "./data.js";
@@ -99,12 +97,9 @@ app.post("/transactions", (req: Request, res: Response) => {
 
 // Update transaction
 app.put("/transactions/:id", (req, res) => {
-  const transactionId = Number(req.params.id);
-
-  const transaction = transactions.find(
-    (transaction) => transaction.id === transactionId
-  );
-
+  console.log("PUT ROUTE HIT!");
+  const transactionId = parseInt(req.params.id!);
+  const transaction = transactions.find((t) => t.id === transactionId);
   if (!transaction) {
     return res.status(404).json({
       message: "Transaction not found"
@@ -155,7 +150,48 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+app.use(express.json());
 
+app.post('/transactions', (req: Request, res: Response) => {
+  const { date, recipient, amount } = req.body;
+
+  if (!date || !recipient || !amount) {
+    return res.status(400).json({ error: "Date, recipient and amount are required." });
+  }
+
+  const currentTransactions = transactions;
+
+  const newId = transactions.length > 0 ? Math.max(...transactions.map((t: Transaction) => t.id)) + 1 : 1;
+
+  let classification = "Unknown";
+
+  if (amount < 0) {
+    const found = classifications.find(
+      (c: Classification) => c.recipient.toLowerCase() === recipient.toLowerCase()
+    );
+    if (found) {
+      classification = found.classification;
+    }
+  } else {
+    classification = "—";
+  }
+
+  const newTransaction: Transaction = {
+    id: newId,
+    date: req.body.date,
+    recipient: req.body.recipient,
+    amount: req.body.amount,
+    classification: classification
+  };
+
+  currentTransactions.push(newTransaction);
+  saveTransactions(currentTransactions);
+  res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
 
 
 
