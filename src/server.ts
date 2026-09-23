@@ -70,14 +70,6 @@ app.delete("/transactions/:id", (req: Request, res: Response) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-
-
-
-app.use(express.json());
-
 
 const transactionsFilePath = path.join(__dirname, "../data/transactions.json");
 
