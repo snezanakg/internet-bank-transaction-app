@@ -45,12 +45,18 @@ app.get("/transactions", (req: Request, res: Response) => {
     });
   }
 
-  res.json(result);
+  return res.status(200).json(result);
 });
 
 // Get one transaction
-app.get("/transactions/:id", (req, res) => {
+app.get("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
+
+if (isNaN(transactionId)) {
+    return res.status(400).json({
+      error: "Invalid transaction ID format. Must be a number."
+    });
+  }
 
   const transaction = transactions.find(
     (transaction) => transaction.id === transactionId
@@ -62,7 +68,7 @@ app.get("/transactions/:id", (req, res) => {
     });
   }
 
-  res.json(transaction);
+  return res.status(200).json(transaction);
 });
 
 // Create transaction
