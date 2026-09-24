@@ -25,9 +25,18 @@ while (running) {
     }
     else if (choice === "2") {
         const id = await input({ message: "Enter transaction ID:" })
-        const response = await fetch(`http://localhost:3000/transactions/${id}`);
+        const response = await fetch("http://localhost:3000/transactions");
+        if (!response.ok) {
+            console.log({ message: "Unable to fetch transactions" });
+            continue;
+        }
         const data = await response.json();
-        console.log(data);
+        if (!Array.isArray(data)) {
+            console.log({ message: "Unexpected transactions response" });
+            continue;
+        }
+        const transaction = data.find((transaction: any) => String(transaction.id) === id);
+        console.log(transaction ?? { message: "Transaction not found" });
 
 
     }
