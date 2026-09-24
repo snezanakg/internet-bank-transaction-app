@@ -5,6 +5,13 @@ while (running) {
     console.log("=== Internet Bank ===");
 
 
+    console.log(" 1. View transactions");
+    console.log(" 2. View one transactions");
+    console.log(" 3. Add transactions");
+    console.log(" 4. Update transactions");
+    console.log(" 5. Delete transactions");
+
+
     console.log("=== Internet Bank===");
 
     console.log(" 1. View all transactions");
@@ -12,6 +19,7 @@ while (running) {
     console.log(" 3. Add transaction");
     console.log(" 4. Update transaction");
     console.log(" 5. Delete transaction");
+
     console.log(" 6. Filter transactions by date");
     console.log(" 7. Exit");
 
@@ -28,6 +36,23 @@ while (running) {
         }
     }
     else if (choice === "2") {
+
+        const id = await input({ message: "Enter transaction ID:" })
+        const response = await fetch("http://localhost:3000/transactions");
+        if (!response.ok) {
+            console.log({ message: "Unable to fetch transactions" });
+            continue;
+        }
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+            console.log({ message: "Unexpected transactions response" });
+            continue;
+        }
+        const transaction = data.find((transaction: any) => String(transaction.id) === id);
+        console.log(transaction ?? { message: "Transaction not found" });
+
+
+
         try {
             const id = await input({ message: "Enter transaction ID:" })
             const response = await fetch(`http://localhost:3000/transactions/${id}`);
@@ -36,6 +61,7 @@ while (running) {
         } catch (error) {
             console.log("Something went wrong.");
         }
+
     }
     else if (choice === "3") {
         try {
