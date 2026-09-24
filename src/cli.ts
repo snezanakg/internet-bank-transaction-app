@@ -2,15 +2,6 @@ import { input } from "@inquirer/prompts";
 import { response } from "express";
 let running = true;
 while (running) {
-    console.log("=== Internet Bank ===");
-
-
-    console.log(" 1. View transactions");
-    console.log(" 2. View one transactions");
-    console.log(" 3. Add transactions");
-    console.log(" 4. Update transactions");
-    console.log(" 5. Delete transactions");
-
 
     console.log("=== Internet Bank===");
 
