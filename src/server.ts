@@ -31,9 +31,6 @@ app.get("/transactions", (req: Request, res: Response) => {
 });
 
 
-app.put("/transactions/:id", (req: Request, res: Response) => {
-  const transactionId = Number(req.params.id);
-
 // Get all transactions with date filtering
 app.get("/transactions", (req: Request, res: Response) => {
   let result = transactions;
@@ -63,15 +60,6 @@ if (isNaN(transactionId)) {
     (transaction) => transaction.id === transactionId
   );
 
-
-  if (isNaN(transactionId)) {
-    return res.status(400).json({
-      error: "Invalid transaction ID format. Must be a number."
-    });
-  }
-
-
-  const transaction = transactions.find((t: Transaction) => t.id === transactionId);
   if (!transaction) {
     return res.status(404).json({ message: "Transaction not found" });
   }
@@ -176,8 +164,5 @@ app.post('/transactions', (req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
-
-
 
 
