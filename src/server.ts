@@ -2,11 +2,11 @@
 import express from "express";
 import type { Request, Response } from "express";
 
-import { transactions } from "./data.js";
+import { transactions, classifications } from "./data.js";
+import type { Transaction, Classification } from "./data.js";
 
 import fs from "fs";
 import path from "path";
-import { transactions, classifications, Transaction, Classification } from "./data";
 
 
 
