@@ -25,12 +25,18 @@ const saveTransactions = (allTransactions: Transaction[]): boolean => {
   }
 };
 
-// 1. Root
+// --- 1. Root ---
+
 app.get("/", (req: Request, res: Response) => {
   res.send("Internet Bank API is running");
 });
 
-// 2. Get all transactions (med datum-filtrering)
+
+
+
+
+// --- 2. Get all transactions (with date filter) ---
+
 app.get("/transactions", (req: Request, res: Response) => {
   let result = transactions;
   const { from, to } = req.query;
@@ -40,11 +46,24 @@ app.get("/transactions", (req: Request, res: Response) => {
       return t.date >= from && t.date <= to;
     });
   }
-
   return res.status(200).json(result);
 });
 
-// 3. Get one transaction by ID
+
+
+
+
+// --- GET / classifications ---
+
+app.get("/classifications", (req: Request, res: Response) => {
+  return res.status(200).json(classifications);
+});
+
+
+
+
+// --- 3. Get one transaction by ID --- 
+
 app.get("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
@@ -63,7 +82,12 @@ app.get("/transactions/:id", (req: Request, res: Response) => {
   return res.status(200).json(transaction);
 });
 
-// 4. POST - Create new transaction
+
+
+
+
+// --- 4. POST - Create new transaction ---
+
 app.post('/transactions', (req: Request, res: Response) => {
   const { date, recipient, amount } = req.body;
 
@@ -96,7 +120,6 @@ app.post('/transactions', (req: Request, res: Response) => {
 
   transactions.push(newTransaction);
   
-  // Kontrollera om sparandet lyckades
   const isSaved = saveTransactions(transactions);
   if (!isSaved) {
     return res.status(500).json({ error: "Internal server error: Could not save transaction." });
@@ -105,7 +128,12 @@ app.post('/transactions', (req: Request, res: Response) => {
   return res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
 });
 
-// 5. PUT - Update transaction
+
+
+
+
+// --- 5. PUT - Update transaction ---
+
 app.put("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
@@ -136,7 +164,12 @@ app.put("/transactions/:id", (req: Request, res: Response) => {
   });
 });
 
-// 6. DELETE - Remove transaction
+
+
+
+
+// --- 6. DELETE - Remove transaction ---
+
 app.delete("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = parseInt(req.params.id as string);
 
