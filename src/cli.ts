@@ -58,7 +58,7 @@ while (running) {
         try {
             const data = await input({ message: "Enter date (YYYY-MM-DD" });
             const recipient = await input({ message: "Enter recipient:" });
-            const amount = await input({ message: "Enter amount:" });
+            const amount = Number(await input({ message: "Enter amount:" }));
             const response = await fetch("http://localhost:3000/transactions", {
                 method: "POST",
                 headers: {
@@ -68,14 +68,14 @@ while (running) {
                     date: data,
                     recipient,
                     amount:
-                        Number(amount),
+                        (amount),
                 }),
             });
             const newTransaction = await
                 response.json();
             console.log(newTransaction);
         } catch (error) {
-            console.log("Something went wrong.");
+            console.log("Something went wrong.", error);
 
         }
     }
@@ -84,7 +84,7 @@ while (running) {
             const id = await input({ message: "Enter transaction ID:" });
             const date = await input({ message: "Enter new date YYYY-MM-DD:" });
             const recipient = await input({ message: "Enter new recipient:" });
-            const amount = await input({ message: "Enter new amount:" });
+            const amount = Number(await input({ message: "Enter new amount:" }));
             const response = await fetch(`http://localhost:3000/transactions/${id}`, {
                 method: "PUT",
                 headers: {
@@ -95,7 +95,7 @@ while (running) {
                     date,
                     recipient,
                     amount:
-                        Number(amount),
+                        (amount),
 
 
                 }),
