@@ -4,9 +4,6 @@ let running = true;
 while (running) {
     console.log("=== Internet Bank ===");
 
-
-    console.log("=== Internet Bank===");
-
     console.log(" 1. View transactions");
     console.log(" 2. View one transactions");
     console.log(" 3. Add transactions");
