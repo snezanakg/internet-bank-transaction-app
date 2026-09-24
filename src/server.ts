@@ -114,7 +114,7 @@ app.delete("/transactions/:id", (req: Request, res: Response) => {
 });
 
 
-const transactionsFilePath = path.join(__dirname, "../data/transactions.json");
+const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
 
 const saveTransactions = (allTransactions: Transaction[]) => {
   fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
