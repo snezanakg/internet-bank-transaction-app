@@ -1,9 +1,13 @@
 
 import express from "express";
 import type { Request, Response } from "express";
+
+import { transactions } from "./data.js";
+
 import fs from "fs";
 import path from "path";
 import { transactions, classifications, Transaction, Classification } from "./data";
+
 
 
 
@@ -14,13 +18,17 @@ const port = 3000;
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+
+
+app.get("/", (req: Request, res: Response) => {
   res.send("Internet Bank API is running");
 });
 
-app.get("/transactions", (req, res) => {
+
+app.get("/transactions", (req: Request, res: Response) => {
   res.json(transactions);
 });
+
 
 app.put("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = parseInt(req.params.id as string);
