@@ -32,7 +32,7 @@ app.get("/transactions", (req: Request, res: Response) => {
 
 
 app.put("/transactions/:id", (req: Request, res: Response) => {
-  const transactionId = parseInt(req.params.id as string);
+  const transactionId = Number(req.params.id);
 
 // Get all transactions with date filtering
 app.get("/transactions", (req: Request, res: Response) => {
