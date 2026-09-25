@@ -81,12 +81,23 @@ npm install
 
 Type into the terminal:
 
+
  npm run dev / server.ts
 ## 3. How to start the terminal application
 Open a NEW terminal and type in:
 
 npm run cli / cli.ts
 
+
+
+npm run dev 
+
+## 3. How to start the terminal application
+Open a NEW terminal and type in:
+
+npm run cli 
+
+feature/readme-updates
 ## 4. API Endpoints Documentation
 
 | Method | Endpoint | Description |
