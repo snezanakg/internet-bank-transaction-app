@@ -59,7 +59,7 @@ Since we rely on standard alphabetical string comparison for YYYY-MM-DD formats,
 What happens if the start date is after the end date?If the start date (from) is chronologically after the end date (to), no transactions can satisfy both conditions (>= from and <= to). Consequently, the API will return an empty list.   
 
 What happens if there are no transactions in the interval?
-he API returns an empty array ([]), and the terminal client catches this and displays a friendly message to the user.   
+The API returns an empty array ([]), and the terminal client catches this and displays a friendly message to the user.
 
 
 
