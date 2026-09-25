@@ -1,6 +1,19 @@
 # Internet Bank API & CLI
  
 ## 1. What the application does
+A simple backend banking application built with Express and TypeScript.
+
+The application allows users to manage bank transactions through an API and an interactive terminal application (CLI).
+
+Users can:
+
+- View all transactions
+- View one transaction by ID
+- Add transactions
+- Update transactions
+- Delete transactions
+- Filter transactions by date
+- View classifications
  
  
 ### Tech Stack
