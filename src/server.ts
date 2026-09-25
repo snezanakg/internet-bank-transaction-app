@@ -26,20 +26,18 @@ app.get("/", (req: Request, res: Response) => {
 
 
 
-app.get("/transactions", (req: Request, res: Response) => {
-  res.json(transactions);
-});
+
 
 
 app.put("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
-
+});
 // Get all transactions with date filtering
 app.get("/transactions", (req: Request, res: Response) => {
   let result = transactions;
   const { from, to } = req.query;
 
-  
+
   if (typeof from === "string" && typeof to === "string") {
     result = transactions.filter((t) => {
       return t.date >= from && t.date <= to;
@@ -53,23 +51,11 @@ app.get("/transactions", (req: Request, res: Response) => {
 app.get("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
-if (isNaN(transactionId)) {
-    return res.status(400).json({
-      error: "Invalid transaction ID format. Must be a number."
-    });
-  }
-
-  const transaction = transactions.find(
-    (transaction) => transaction.id === transactionId
-  );
-
-
   if (isNaN(transactionId)) {
     return res.status(400).json({
       error: "Invalid transaction ID format. Must be a number."
     });
   }
-
 
   const transaction = transactions.find((t: Transaction) => t.id === transactionId);
   if (!transaction) {
