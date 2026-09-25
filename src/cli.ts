@@ -117,8 +117,7 @@ while (running) {
                 continue;
             };
 
-            const response = await fetch(`http://localhost:3000/transactions?from=
-            ${startDate}&to=${endDate}`);
+            const response = await fetch(`http://localhost:3000/transactions?from=${startDate}&to=${endDate}`);
 
             const transactions = await
                 response.json();
