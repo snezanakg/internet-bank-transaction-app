@@ -151,7 +151,7 @@ app.put("/transactions/:id", (req: Request, res: Response) => {
 
   transaction.date = req.body.date || transaction.date;
   transaction.recipient = req.body.recipient || transaction.recipient;
-  transaction.amount = req.body.amount || transaction.amount;
+  transaction.amount = req.body.amount ?? transaction.amount;
 
   const isSaved = saveTransactions(transactions);
   if (!isSaved) {
