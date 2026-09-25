@@ -1,6 +1,19 @@
 # Internet Bank API & CLI
  
 ## 1. What the application does
+A simple backend banking application built with Express and TypeScript.
+
+The application allows users to manage bank transactions through an API and an interactive terminal application (CLI).
+
+Users can:
+
+- View all transactions
+- View one transaction by ID
+- Add transactions
+- Update transactions
+- Delete transactions
+- Filter transactions by date
+- View classifications
  
  
 ### Tech Stack
@@ -27,7 +40,7 @@ npm run dev
 Open a NEW terminal and type in:
  
 ```
-npm run cli 
+npx tsx src/cli.ts
 ```
 ## 4. API Endpoints Documentation
  
@@ -42,7 +55,7 @@ npm run cli
  
 ## 5. How to use the terminal application
  
-When running npm run cli, you are presented with a menu:
+When running npx tsx src/cli.ts, you are presented with a menu:
  
 1. **View transactions** - Lists all stored transactions.
  
@@ -79,7 +92,7 @@ Outgoing transactions (negative amounts) are matched against classifications.jso
 date (Format: YYYY-MM-DD), recipient (string), and amount (number). An id is automatically generated.
  
 **Which fields can be updated?**
-date, recipient, and amount can all be updated. If the recipient changes, the classification updates automatically.
+date, recipient, and amount can all be updated.
  
 **What happens when a transaction does not exist?**
 If a requested ID does not exist on GET, PUT, or DELETE, the API responds with HTTP status 404 Not Found.
@@ -89,7 +102,7 @@ If a requested ID does not exist on GET, PUT, or DELETE, the API responds with H
  
 * **201 Created**: Successful creation of a transaction.
  
-* **400 Bad Request**: Missing required fields or invalid ID format / invalid dates.
+* **400 Bad Request**: Missing required fields or invalid ID format.
  
 * **404 Not Found**: Transaction ID does not exist.
  
