@@ -1,5 +1,5 @@
 import { input } from "@inquirer/prompts";
-import { response } from "express";
+import type { Transaction } from "./data.js";
 let running = true;
 while (running) {
 
@@ -27,22 +27,6 @@ while (running) {
         }
     }
     else if (choice === "2") {
-
-        const id = await input({ message: "Enter transaction ID:" })
-        const response = await fetch("http://localhost:3000/transactions");
-        if (!response.ok) {
-            console.log({ message: "Unable to fetch transactions" });
-            continue;
-        }
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-            console.log({ message: "Unexpected transactions response" });
-            continue;
-        }
-        const transaction = data.find((transaction: any) => String(transaction.id) === id);
-        console.log(transaction ?? { message: "Transaction not found" });
-
-
 
         try {
             const id = await input({ message: "Enter transaction ID:" })
@@ -139,7 +123,7 @@ while (running) {
             const transactions = await
                 response.json();
 
-            const filtered = transactions.filter((transactions: any) =>
+            const filtered = transactions.filter((transactions: Transaction) =>
                 transactions.date >= startDate && transactions.date <= endDate);
             if (filtered.length === 0) {
                 console.log("No transaction found for this date range.");
