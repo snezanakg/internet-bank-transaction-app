@@ -1,4 +1,3 @@
-
 import express from "express";
 import type { Request, Response } from "express";
 
@@ -8,17 +7,25 @@ import type { Transaction, Classification } from "./data.js";
 import fs from "fs";
 import path from "path";
 
-
-
-
-
 const app = express();
 const port = 3000;
 
-
 app.use(express.json());
 
+const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
 
+// Try-catch tillagd här kring fs.writeFileSync
+const saveTransactions = (allTransactions: Transaction[]): boolean => {
+  try {
+    fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
+    return true;
+  } catch (error) {
+    console.error("Error saving transactions to file:", error);
+    return false;
+  }
+};
+
+// --- 1. Root ---
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Internet Bank API is running");
@@ -27,12 +34,8 @@ app.get("/", (req: Request, res: Response) => {
 
 
 
+// --- 2. Get all transactions (with date filter) ---
 
-
-app.put("/transactions/:id", (req: Request, res: Response) => {
-  const transactionId = Number(req.params.id);
-});
-// Get all transactions with date filtering
 app.get("/transactions", (req: Request, res: Response) => {
   let result = transactions;
   const { from, to } = req.query;
@@ -43,11 +46,24 @@ app.get("/transactions", (req: Request, res: Response) => {
       return t.date >= from && t.date <= to;
     });
   }
-
   return res.status(200).json(result);
 });
 
-// Get one transaction
+
+
+
+
+// --- GET / classifications ---
+
+app.get("/classifications", (req: Request, res: Response) => {
+  return res.status(200).json(classifications);
+});
+
+
+
+
+// --- 3. Get one transaction by ID --- 
+
 app.get("/transactions/:id", (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
@@ -58,63 +74,26 @@ app.get("/transactions/:id", (req: Request, res: Response) => {
   }
 
   const transaction = transactions.find((t: Transaction) => t.id === transactionId);
+
   if (!transaction) {
     return res.status(404).json({ message: "Transaction not found" });
   }
-  transaction.date = req.body.date || transaction.date;
-  transaction.recipient = req.body.recipient || transaction.recipient;
-  transaction.amount = req.body.amount || transaction.amount;
-  res.json(transaction);
-
-  saveTransactions(transactions);
-  return res.status(200).json({
-    message: "Transaction updated successfully!",
-    transaction
-  });
 
   return res.status(200).json(transaction);
-
 });
 
 
-app.delete("/transactions/:id", (req: Request, res: Response) => {
-  const transactionId = parseInt(req.params.id as string);
-
-  if (isNaN(transactionId)) {
-    return res.status(400).json({
-      error: "Invalid transaction ID format. Must be a number."
-    });
-  }
-
-  const index = transactions.findIndex((t: Transaction) => t.id === transactionId);
-  if (index === -1) {
-    return res.status(404).json({ message: "Transaction not found" });
-  }
-  transactions.splice(index, 1);
-
-  saveTransactions(transactions);
-
-  return res.status(200).json({
-    message: "Transaction deleted successfully!"
-  });
-});
 
 
-const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
 
-const saveTransactions = (allTransactions: Transaction[]) => {
-  fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
-};
-
+// --- 4. POST - Create new transaction ---
 
 app.post('/transactions', (req: Request, res: Response) => {
   const { date, recipient, amount } = req.body;
 
-  if (!date || !recipient || !amount) {
+  if (!date || !recipient || amount === undefined) {
     return res.status(400).json({ error: "Date, recipient and amount are required." });
   }
-
-  const currentTransactions = transactions;
 
   const newId = transactions.length > 0 ? Math.max(...transactions.map((t: Transaction) => t.id)) + 1 : 1;
 
@@ -131,39 +110,92 @@ app.post('/transactions', (req: Request, res: Response) => {
     classification = "—";
   }
 
-
-
   const newTransaction: Transaction = {
     id: newId,
-    date: req.body.date,
-    recipient: req.body.recipient,
-    amount: req.body.amount,
-    classification: classification
-
+    date,
+    recipient,
+    amount,
+    classification
   };
-  currentTransactions.push(newTransaction);
-  saveTransactions(currentTransactions);
-  res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
 
+  transactions.push(newTransaction);
+
+  const isSaved = saveTransactions(transactions);
+  if (!isSaved) {
+    return res.status(500).json({ error: "Internal server error: Could not save transaction." });
+  }
+
+  return res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
 });
 
 
 
 
 
+// --- 5. PUT - Update transaction ---
+
+app.put("/transactions/:id", (req: Request, res: Response) => {
+  const transactionId = Number(req.params.id);
+
+  if (isNaN(transactionId)) {
+    return res.status(400).json({
+      error: "Invalid transaction ID format. Must be a number."
+    });
+  }
+
+  const transaction = transactions.find((t: Transaction) => t.id === transactionId);
+
+  if (!transaction) {
+    return res.status(404).json({ message: "Transaction not found" });
+  }
+
+  transaction.date = req.body.date || transaction.date;
+  transaction.recipient = req.body.recipient || transaction.recipient;
+  transaction.amount = req.body.amount ?? transaction.amount;
+
+  const isSaved = saveTransactions(transactions);
+  if (!isSaved) {
+    return res.status(500).json({ error: "Internal server error: Could not update transaction." });
+  }
+
+  return res.status(200).json({
+    message: "Transaction updated successfully!",
+    transaction
+  });
+});
 
 
 
 
 
+// --- 6. DELETE - Remove transaction ---
 
+app.delete("/transactions/:id", (req: Request, res: Response) => {
+  const transactionId = Number(req.params.id);
 
+  if (isNaN(transactionId)) {
+    return res.status(400).json({
+      error: "Invalid transaction ID format. Must be a number."
+    });
+  }
+
+  const index = transactions.findIndex((t: Transaction) => t.id === transactionId);
+  if (index === -1) {
+    return res.status(404).json({ message: "Transaction not found" });
+  }
+
+  transactions.splice(index, 1);
+
+  const isSaved = saveTransactions(transactions);
+  if (!isSaved) {
+    return res.status(500).json({ error: "Internal server error: Could not delete transaction." });
+  }
+
+  return res.status(200).json({
+    message: "Transaction deleted successfully!"
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
-
-
-
-
