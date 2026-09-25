@@ -171,7 +171,7 @@ app.put("/transactions/:id", (req: Request, res: Response) => {
 // --- 6. DELETE - Remove transaction ---
 
 app.delete("/transactions/:id", (req: Request, res: Response) => {
-  const transactionId = parseInt(req.params.id as string);
+  const transactionId = Number(req.params.id);
 
   if (isNaN(transactionId)) {
     return res.status(400).json({
