@@ -50,30 +50,55 @@ npm run cli
 
 ## 5. How to use the terminal application
 
-We descided to have these options in the CLI:
+When running npm run cli, you are presented with a menu:
 
-1. View transactions
-2. View one transaction
-3. Delete transaction
-4. Add Transaction
-5. Update transaction
-6. Filter transactions by date
-7. Exit
+1. **View transactions** - Lists all stored transactions.
+
+2. **View one transaction** - Shows details for a specific ID.
+
+3. **Add transaction** - Prompts for date, recipient, and amount, then saves it via the API.
+
+4. **Update transaction** - Modifies an existing transaction.
+
+5. **Delete transaction** - Removes a transaction by ID.
+
+6. **Filter transactions by date** - Shows transactions within a specific date range.
+
+7. **Exit** - Closes the application.
+
+
 ## 6. Important Decisions
 
 Explain decisions you made when the requirements were unclear.
 For example: <br>
 
-Are start/end dates included?
+**Are start/end dates included?**
 
-What happens with invalid dates?
+Yes, both the start and end dates are inclusive. The filtering logic uses >= and <=, meaning any transactions occurring precisely on the start or end date will be included in the results.
 
-What happens when there is no classification?
+**What happens with invalid dates?**
 
-Which fields are required when creating a transaction?
+The terminal client validates the input format using Date.parse(). If an invalid date format (anything other than YYYY-MM-DD) is entered, the application prints an error message ("Invalid date. Please use YYYY-MM-DD.") and returns to the main menu without crashing.
 
-Which fields can be updated?
+**What happens when there is no classification?**
+Outgoing transactions (negative amounts) are matched against classifications.json. If no match is found, the category defaults to "Unknown". Positive amounts (income) do not receive a classification.
 
-What happens when a transaction does not exist?
+**Which fields are required when creating a transaction?**
+date (Format: YYYY-MM-DD), recipient (string), and amount (number). An id is automatically generated.
 
-Which HTTP status codes did you choose?
+**Which fields can be updated?**
+date, recipient, and amount can all be updated. If the recipient changes, the classification updates automatically.
+
+**What happens when a transaction does not exist?**
+If a requested ID does not exist on GET, PUT, or DELETE, the API responds with HTTP status 404 Not Found.
+
+**Which HTTP status codes did you choose?**
+* **200 OK**: Successful retrieval, update, or deletion.
+
+* **201 Created**: Successful creation of a transaction.
+
+* **400 Bad Request**: Missing required fields or invalid ID format / invalid dates.
+
+* **404 Not Found**: Transaction ID does not exist.
+
+* **500 Internal Server Error**: File system writing errors when saving to transactions.json.
