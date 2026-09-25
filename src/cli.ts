@@ -1,5 +1,5 @@
 import { input } from "@inquirer/prompts";
-import { response } from "express";
+import type { Transaction } from "./data.js";
 let running = true;
 while (running) {
 
@@ -28,22 +28,6 @@ while (running) {
     }
     else if (choice === "2") {
 
-        const id = await input({ message: "Enter transaction ID:" })
-        const response = await fetch("http://localhost:3000/transactions");
-        if (!response.ok) {
-            console.log({ message: "Unable to fetch transactions" });
-            continue;
-        }
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-            console.log({ message: "Unexpected transactions response" });
-            continue;
-        }
-        const transaction = data.find((transaction: any) => String(transaction.id) === id);
-        console.log(transaction ?? { message: "Transaction not found" });
-
-
-
         try {
             const id = await input({ message: "Enter transaction ID:" })
             const response = await fetch(`http://localhost:3000/transactions/${id}`);
@@ -58,7 +42,7 @@ while (running) {
         try {
             const data = await input({ message: "Enter date (YYYY-MM-DD" });
             const recipient = await input({ message: "Enter recipient:" });
-            const amount = await input({ message: "Enter amount:" });
+            const amount = Number(await input({ message: "Enter amount:" }));
             const response = await fetch("http://localhost:3000/transactions", {
                 method: "POST",
                 headers: {
@@ -68,14 +52,14 @@ while (running) {
                     date: data,
                     recipient,
                     amount:
-                        Number(amount),
+                        (amount),
                 }),
             });
             const newTransaction = await
                 response.json();
             console.log(newTransaction);
         } catch (error) {
-            console.log("Something went wrong.");
+            console.log("Something went wrong.", error);
 
         }
     }
@@ -84,7 +68,7 @@ while (running) {
             const id = await input({ message: "Enter transaction ID:" });
             const date = await input({ message: "Enter new date YYYY-MM-DD:" });
             const recipient = await input({ message: "Enter new recipient:" });
-            const amount = await input({ message: "Enter new amount:" });
+            const amount = Number(await input({ message: "Enter new amount:" }));
             const response = await fetch(`http://localhost:3000/transactions/${id}`, {
                 method: "PUT",
                 headers: {
@@ -95,7 +79,7 @@ while (running) {
                     date,
                     recipient,
                     amount:
-                        Number(amount),
+                        (amount),
 
 
                 }),
@@ -139,7 +123,7 @@ while (running) {
             const transactions = await
                 response.json();
 
-            const filtered = transactions.filter((transactions: any) =>
+            const filtered = transactions.filter((transactions: Transaction) =>
                 transactions.date >= startDate && transactions.date <= endDate);
             if (filtered.length === 0) {
                 console.log("No transaction found for this date range.");

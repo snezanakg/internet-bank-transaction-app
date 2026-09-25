@@ -7,14 +7,15 @@
   },
   {
     "id": 2,
-    "date": "2026-09-02",
-    "recipient": "SL",
-    "amount": -120
+    "date": "2026-09-01",
+    "recipient": "IKEA",
+    "amount": -2000
   },
   {
     "id": 3,
-    "date": "2026-09-04",
-    "recipient": "Employer",
-    "amount": 3000
+    "date": "2026-10-01",
+    "recipient": "ICA",
+    "amount": 200,
+    "classification": "—"
   }
 ]
