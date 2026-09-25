@@ -117,22 +117,19 @@ while (running) {
                 continue;
             };
 
-            const response = await fetch("http://localhost:3000/transactions", {
+            const response = await fetch(`http://localhost:3000/transactions?from=${startDate}&to=${endDate}`);
 
-            });
             const transactions = await
                 response.json();
 
-            const filtered = transactions.filter((transactions: Transaction) =>
-                transactions.date >= startDate && transactions.date <= endDate);
-            if (filtered.length === 0) {
+            if (transactions.length === 0) {
                 console.log("No transaction found for this date range.");
 
             } else {
-                console.log(filtered);
+                console.log(transactions);
             }
         } catch (error) {
-            console.log("Something went wrong.");
+            console.log("Something went wrong:", error);
         }
     }
 

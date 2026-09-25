@@ -34,12 +34,12 @@ app.get("/", (req: Request, res: Response) => {
 
 
 
-
 // --- 2. Get all transactions (with date filter) ---
 
 app.get("/transactions", (req: Request, res: Response) => {
   let result = transactions;
   const { from, to } = req.query;
+
 
   if (typeof from === "string" && typeof to === "string") {
     result = transactions.filter((t) => {
@@ -119,12 +119,12 @@ app.post('/transactions', (req: Request, res: Response) => {
   };
 
   transactions.push(newTransaction);
-  
+
   const isSaved = saveTransactions(transactions);
   if (!isSaved) {
     return res.status(500).json({ error: "Internal server error: Could not save transaction." });
   }
-  
+
   return res.status(201).json({ message: "Transaction added successfully!", transaction: newTransaction });
 });
 
@@ -185,7 +185,7 @@ app.delete("/transactions/:id", (req: Request, res: Response) => {
   }
 
   transactions.splice(index, 1);
-  
+
   const isSaved = saveTransactions(transactions);
   if (!isSaved) {
     return res.status(500).json({ error: "Internal server error: Could not delete transaction." });
