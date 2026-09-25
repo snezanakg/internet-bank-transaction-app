@@ -91,7 +91,7 @@ app.get("/transactions/:id", (req: Request, res: Response) => {
 app.post('/transactions', (req: Request, res: Response) => {
   const { date, recipient, amount } = req.body;
 
-  if (!date || !recipient || !amount) {
+  if (!date || !recipient || amount === undefined) {
     return res.status(400).json({ error: "Date, recipient and amount are required." });
   }
 
