@@ -1,65 +1,88 @@
+
 import express from "express";
 import type { Request, Response } from "express";
 import { pool } from "./db.js";
-import { classifications } from "./data.js";
-import type {  Classification } from "./data.js";
-
-import fs from "fs";
-import path from "path";
+import { categories } from "./categories.js";
 
 const app = express();
-const port = 3000;
+const port = Number(process.env.PORT || 3000);
 
 app.use(express.json());
 
+// Validate date format
+function isValidDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return false;
+  }
 
+  const parsedDate = new Date(`${date}T00:00:00Z`);
 
-// --- 1. Root ---
+  return (
+    Number.isFinite(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === date
+  );
+}
 
+// SQL LEFT JOIN for transaction classifications
+const transactionQuery = `
+  SELECT
+    t.id,
+    TO_CHAR(t.date, 'YYYY-MM-DD') AS date,
+    t.recipient,
+    t.amount::double precision AS amount,
+    CASE
+      WHEN t.amount >= 0 THEN '—'
+      ELSE COALESCE(rc.classification, 'Unknown')
+    END AS classification
+  FROM transactions AS t
+  LEFT JOIN recipient_classifications AS rc
+    ON LOWER(TRIM(t.recipient)) = LOWER(TRIM(rc.recipient))
+`;
+
+// Find a transaction with its classification
+async function findTransactionById(id: number) {
+  const result = await pool.query(
+    `${transactionQuery} WHERE t.id = $1`,
+    [id]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+// 1. Root
 app.get("/", (req: Request, res: Response) => {
-  res.send("Internet Bank API is running");
+  return res.send("Internet Bank API is running");
 });
 
-
-
-
-// --- 2. Get all transactions (with date filter) ---
-
-
+// 2. GET all transactions with optional date filter
 app.get("/transactions", async (req: Request, res: Response) => {
   try {
     const { from, to } = req.query;
 
-    let query = `
-      SELECT
-        id,
-        TO_CHAR(date, 'YYYY-MM-DD') AS date,
-        recipient,
-        amount::double precision AS amount,
-        classification
-      FROM transactions
-    `;
-
+    let query = transactionQuery;
     const values: string[] = [];
 
-    if (typeof from === "string" && typeof to === "string") {
-      query += " WHERE date BETWEEN $1 AND $2";
+    if (from !== undefined || to !== undefined) {
+      if (
+        typeof from !== "string" ||
+        typeof to !== "string" ||
+        !isValidDate(from) ||
+        !isValidDate(to) ||
+        from > to
+      ) {
+        return res.status(400).json({
+          error: "Provide a valid date range in YYYY-MM-DD format."
+        });
+      }
+
+      query += " WHERE t.date BETWEEN $1 AND $2";
       values.push(from, to);
     }
 
-    query += " ORDER BY id";
+    query += " ORDER BY t.id";
 
     const result = await pool.query(query, values);
-
-    const transactions = result.rows.map((row) => {
-      if (row.classification === null) {
-        const { classification, ...transaction } = row;
-        return transaction;
-      }
-      return row;
-    });
-
-    return res.status(200).json(transactions);
+    return res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching transactions:", error);
     return res.status(500).json({
@@ -68,118 +91,49 @@ app.get("/transactions", async (req: Request, res: Response) => {
   }
 });
 
-
-
-
-
-// --- GET / classifications ---
-
-
-app.get("/transactions/:id", async (req: Request, res: Response) => {
-  try {
-    const transactionId = Number(req.params.id);
-
-    if (!Number.isSafeInteger(transactionId) || transactionId <= 0) {
-      return res.status(400).json({
-        error: "Invalid transaction ID format. Must be a positive integer."
-      });
-    }
-
-    const result = await pool.query(
-      `SELECT
-        id,
-        TO_CHAR(date, 'YYYY-MM-DD') AS date,
-        recipient,
-        amount::double precision AS amount,
-        classification
-       FROM transactions
-       WHERE id = $1`,
-      [transactionId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Transaction not found"
-      });
-    }
-
-    const { classification, ...transaction } = result.rows[0];
-
-    return res.status(200).json(
-      classification === null
-        ? transaction
-        : { ...transaction, classification }
-    );
-  } catch (error) {
-    console.error("Error fetching transaction:", error);
-
-    return res.status(500).json({
-      error: "Could not fetch transaction"
-    });
-  }
+// 3. GET fixed classification categories
+app.get("/classifications", (req: Request, res: Response) => {
+  return res.status(200).json(categories);
 });
 
-
-
-// --- 3. Get one transaction by ID --- 
-
-
+// 4. GET one transaction by ID
 app.get("/transactions/:id", async (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
-  if (!Number.isSafeInteger(transactionId) || transactionId <= 0) {
+  if (
+    !Number.isSafeInteger(transactionId) ||
+    transactionId <= 0
+  ) {
     return res.status(400).json({
       error: "Invalid transaction ID format. Must be a positive integer."
     });
   }
 
   try {
-    const result = await pool.query(
-      `SELECT
-        id,
-        TO_CHAR(date, 'YYYY-MM-DD') AS date,
-        recipient,
-        amount::double precision AS amount,
-        classification
-       FROM transactions
-       WHERE id = $1`,
-      [transactionId]
-    );
+    const transaction = await findTransactionById(transactionId);
 
-    if (result.rows.length === 0) {
+    if (!transaction) {
       return res.status(404).json({
         message: "Transaction not found"
       });
     }
 
-    const { classification, ...transaction } = result.rows[0];
-
-    return res.status(200).json(
-      classification === null
-        ? transaction
-        : { ...transaction, classification }
-    );
+    return res.status(200).json(transaction);
   } catch (error) {
     console.error("Error fetching transaction:", error);
-
     return res.status(500).json({
       error: "Could not fetch transaction"
     });
   }
 });
 
-
-
-
-// --- 4. POST - Create new transaction ---
-
-
+// 5. POST - Create transaction
 app.post("/transactions", async (req: Request, res: Response) => {
   const { date, recipient, amount } = req.body ?? {};
 
-  // Validate required fields
   if (
     typeof date !== "string" ||
+    !isValidDate(date) ||
     typeof recipient !== "string" ||
     !recipient.trim() ||
     typeof amount !== "number" ||
@@ -190,73 +144,37 @@ app.post("/transactions", async (req: Request, res: Response) => {
     });
   }
 
-  // Validate transaction date
-  const parsedDate = new Date(`${date}T00:00:00Z`);
-
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-    !Number.isFinite(parsedDate.getTime()) ||
-    parsedDate.toISOString().slice(0, 10) !== date
-  ) {
-    return res.status(400).json({
-      error: "Date must be a valid date in YYYY-MM-DD format."
-    });
-  }
-
-  // Keep existing classification logic
-  let classification = "Unknown";
-
-  if (amount < 0) {
-    const found = classifications.find(
-      (c: Classification) =>
-        c.recipient.toLowerCase() === recipient.trim().toLowerCase()
-    );
-
-    if (found) {
-      classification = found.classification;
-    }
-  } else {
-    classification = "—";
-  }
-
   try {
-    // Save the transaction in PostgreSQL
     const result = await pool.query(
-      `INSERT INTO transactions
-        (date, recipient, amount, classification)
-       VALUES ($1, $2, $3, $4)
-       RETURNING
-         id,
-         TO_CHAR(date, 'YYYY-MM-DD') AS date,
-         recipient,
-         amount::double precision AS amount,
-         classification`,
-      [date, recipient.trim(), amount, classification]
+      `INSERT INTO transactions (date, recipient, amount)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [date, recipient.trim(), amount]
     );
+
+    const transactionId = result.rows[0].id;
+    const transaction = await findTransactionById(transactionId);
 
     return res.status(201).json({
       message: "Transaction added successfully!",
-      transaction: result.rows[0]
+      transaction
     });
   } catch (error) {
     console.error("Error creating transaction:", error);
-
     return res.status(500).json({
       error: "Could not save transaction."
     });
   }
 });
 
-
-
-
-// --- 5. PUT - Update transaction ---
-
-
+// 6. PUT - Update transaction
 app.put("/transactions/:id", async (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
-  if (!Number.isSafeInteger(transactionId) || transactionId <= 0) {
+  if (
+    !Number.isSafeInteger(transactionId) ||
+    transactionId <= 0
+  ) {
     return res.status(400).json({
       error: "Invalid transaction ID."
     });
@@ -264,9 +182,9 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
 
   const { date, recipient, amount } = req.body ?? {};
 
-  // Validate optional fields
   if (
-    (date !== undefined && typeof date !== "string") ||
+    (date !== undefined &&
+      (typeof date !== "string" || !isValidDate(date))) ||
     (recipient !== undefined &&
       (typeof recipient !== "string" || !recipient.trim())) ||
     (amount !== undefined &&
@@ -277,20 +195,6 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
     });
   }
 
-  if (date !== undefined) {
-    const parsedDate = new Date(`${date}T00:00:00Z`);
-
-    if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-      !Number.isFinite(parsedDate.getTime()) ||
-      parsedDate.toISOString().slice(0, 10) !== date
-    ) {
-      return res.status(400).json({
-        error: "Invalid date. Use YYYY-MM-DD."
-      });
-    }
-  }
-
   try {
     const result = await pool.query(
       `UPDATE transactions
@@ -299,12 +203,7 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
          recipient = COALESCE($2::text, recipient),
          amount = COALESCE($3::numeric, amount)
        WHERE id = $4
-       RETURNING
-         id,
-         TO_CHAR(date, 'YYYY-MM-DD') AS date,
-         recipient,
-         amount::double precision AS amount,
-         classification`,
+       RETURNING id`,
       [
         date ?? null,
         recipient?.trim() ?? null,
@@ -319,30 +218,28 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
       });
     }
 
+    const transaction = await findTransactionById(transactionId);
+
     return res.status(200).json({
       message: "Transaction updated successfully!",
-      transaction: result.rows[0]
+      transaction
     });
   } catch (error) {
     console.error("Error updating transaction:", error);
-
     return res.status(500).json({
       error: "Could not update transaction."
     });
   }
 });
 
-
-
-
-
-
-// --- 6. DELETE - Remove transaction ---
-
+// 7. DELETE transaction
 app.delete("/transactions/:id", async (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
-  if (!Number.isSafeInteger(transactionId) || transactionId <= 0) {
+  if (
+    !Number.isSafeInteger(transactionId) ||
+    transactionId <= 0
+  ) {
     return res.status(400).json({
       error: "Invalid transaction ID."
     });
@@ -365,14 +262,13 @@ app.delete("/transactions/:id", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error deleting transaction:", error);
-
     return res.status(500).json({
       error: "Could not delete transaction."
     });
   }
 });
 
-
+// Start server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

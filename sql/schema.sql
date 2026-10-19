@@ -6,3 +6,25 @@ CREATE TABLE IF NOT EXISTS transactions (
     amount NUMERIC(14,2) NOT NULL,
     classification TEXT
 );
+
+
+-- Recipient classification mappings
+CREATE TABLE IF NOT EXISTS recipient_classifications (
+    recipient TEXT PRIMARY KEY,
+    classification TEXT NOT NULL
+        CHECK (classification IN (
+            'Household',
+            'Transport',
+            'Food',
+            'Entertainment',
+            'Unknown'
+        ))
+);
+
+-- Import existing valid classification mappings
+INSERT INTO recipient_classifications (recipient, classification)
+VALUES
+    ('ICA', 'Food'),
+    ('SL', 'Transport')
+ON CONFLICT (recipient)
+DO UPDATE SET classification = EXCLUDED.classification;
