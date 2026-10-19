@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --watch src --watch data --ext ts,json --exec \"npx tsc && node src/server.js\""
+    "dev": "tsx watch src/server.ts"
   },
   "repository": {
     "type": "git",
@@ -21,10 +21,13 @@
   "homepage": "https://github.com/snezanakg/internet-bank-transaction-app#readme",
   "dependencies": {
     "@inquirer/prompts": "^8.7.2",
-    "express": "^5.2.1"
+    "dotenv": "^18.0.8",
+    "express": "^5.2.1",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/pg": "^8.23.1",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
