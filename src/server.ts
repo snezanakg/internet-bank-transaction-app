@@ -6,12 +6,22 @@ import type { Transaction, Classification } from "./data.js";
 
 import fs from "fs";
 import path from "path";
+import { z } from "zod";
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
+
+const transactionSchema =
+z.object ({
+  date: z.iso.date(),
+  recipient: z.string() .min (1, "Recipient is required"),
+  amount: z.number().refine((value) => value !== 0, {message : "Amount cannot be zero",
+}),
+})
+const transactionUpdateSchema = transactionSchema.partial();
 const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
 
 // Try-catch tillagd här kring fs.writeFileSync
@@ -89,7 +99,15 @@ app.get("/transactions/:id", (req: Request, res: Response) => {
 // --- 4. POST - Create new transaction ---
 
 app.post('/transactions', (req: Request, res: Response) => {
-  const { date, recipient, amount } = req.body;
+  const result = transactionSchema.safeParse(req.body);
+
+if (!result.success){
+  return res.status(400).json({
+    error: result.error.issues,
+  });
+}
+
+  const { date, recipient, amount } = result.data;
 
   if (!date || !recipient || amount === undefined) {
     return res.status(400).json({ error: "Date, recipient and amount are required." });
@@ -135,6 +153,16 @@ app.post('/transactions', (req: Request, res: Response) => {
 // --- 5. PUT - Update transaction ---
 
 app.put("/transactions/:id", (req: Request, res: Response) => {
+  
+    const result = transactionUpdateSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: result.error.issues,
+
+      });
+    }
+  
   const transactionId = Number(req.params.id);
 
   if (isNaN(transactionId)) {
@@ -149,9 +177,9 @@ app.put("/transactions/:id", (req: Request, res: Response) => {
     return res.status(404).json({ message: "Transaction not found" });
   }
 
-  transaction.date = req.body.date || transaction.date;
-  transaction.recipient = req.body.recipient || transaction.recipient;
-  transaction.amount = req.body.amount ?? transaction.amount;
+  transaction.date = result.data.date ?? transaction.date;
+  transaction.recipient = result.data.recipient ?? transaction.recipient;
+  transaction.amount = result.data.amount ?? transaction.amount;
 
   const isSaved = saveTransactions(transactions);
   if (!isSaved) {
