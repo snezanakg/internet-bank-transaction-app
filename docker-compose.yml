@@ -1,4 +1,5 @@
 
+
 services:
   db:
     container_name: postgres_bankcontainer
@@ -12,6 +13,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/18/docker
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
   pgadmin:
     container_name: pgadmin4_bankcontainer
