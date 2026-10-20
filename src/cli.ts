@@ -1,5 +1,4 @@
 import { input } from "@inquirer/prompts";
-import type { Transaction } from "./data.js";
 let running = true;
 while (running) {
 
@@ -22,7 +21,7 @@ while (running) {
             const response = await fetch("http://localhost:3000/transactions");
             const data = await response.json();
             console.log(data);
-        } catch (error) {
+        } catch {
             console.log("Something went wrong.");
         }
     }
@@ -33,7 +32,7 @@ while (running) {
             const response = await fetch(`http://localhost:3000/transactions/${id}`);
             const data = await response.json();
             console.log(data);
-        } catch (error) {
+        } catch {
             console.log("Something went wrong.");
         }
 
@@ -87,7 +86,7 @@ while (running) {
 
             const updatedTransaction = await response.json();
             console.log(updatedTransaction);
-        } catch (error) {
+        } catch {
             console.log("Something went wrong.");
         }
     }
@@ -101,7 +100,7 @@ while (running) {
             const result = await
                 response.json();
             console.log(result);
-        } catch (error) {
+        } catch {
             console.log("Something went wrong.");
 
         }
@@ -141,4 +140,3 @@ while (running) {
 
     }
 }
-
