@@ -6,11 +6,9 @@ import { transactions } from "./data.js";
 import type { Transaction } from "./data.js";
 
 import fs from "fs";
-import path from "path";
 import { z } from "zod";
 import { pool } from "./db.js";
 import { categories } from "./categories.js";
-import { error } from "console";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
