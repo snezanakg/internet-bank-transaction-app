@@ -1,6 +1,13 @@
 
 import express from "express";
 import type { Request, Response } from "express";
+
+import { transactions } from "./data.js";
+import type { Transaction } from "./data.js";
+
+import fs from "fs";
+import path from "path";
+import { z } from "zod";
 import { pool } from "./db.js";
 import { categories } from "./categories.js";
 
@@ -9,6 +16,28 @@ const port = Number(process.env.PORT || 3000);
 
 app.use(express.json());
 
+
+const transactionSchema =
+  z.object({
+    date: z.iso.date(),
+    recipient: z.string().min(1, "Recipient is required"),
+    amount: z.number().refine((value) => value !== 0, {
+      message: "Amount cannot be zero",
+    }),
+  })
+const transactionUpdateSchema = transactionSchema.partial();
+const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
+
+// Try-catch tillagd här kring fs.writeFileSync
+const saveTransactions = (allTransactions: Transaction[]): boolean => {
+  try {
+    fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
+    return true;
+  } catch (error) {
+    console.error("Error saving transactions to file:", error);
+    return false;
+  }
+};
 // Validate date format
 function isValidDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -96,35 +125,42 @@ app.get("/classifications", (req: Request, res: Response) => {
   return res.status(200).json(categories);
 });
 
-// 4. GET one transaction by ID
-app.get("/transactions/:id", async (req: Request, res: Response) => {
-  const transactionId = Number(req.params.id);
 
-  if (
-    !Number.isSafeInteger(transactionId) ||
-    transactionId <= 0
-  ) {
+
+
+// --- 5. PUT - Update transaction ---
+
+app.put("/transactions/:id", (req: Request, res: Response) => {
+
+  const result = transactionUpdateSchema.safeParse(req.body);
+
+  if (!result.success) {
     return res.status(400).json({
-      error: "Invalid transaction ID format. Must be a positive integer."
+      error: result.error.issues,
+
     });
   }
 
-  try {
-    const transaction = await findTransactionById(transactionId);
-
-    if (!transaction) {
-      return res.status(404).json({
-        message: "Transaction not found"
-      });
-    }
-
-    return res.status(200).json(transaction);
-  } catch (error) {
-    console.error("Error fetching transaction:", error);
-    return res.status(500).json({
-      error: "Could not fetch transaction"
+  const transactionId = Number(req.params.id);
+  const transaction = transactions.find((t: Transaction) => t.id === transactionId);
+  if (!transaction) {
+    return res.status(404).json({
+      message: "Transaction not found"
     });
   }
+  transaction.date = result.data.date ?? transaction.date;
+  transaction.recipient = result.data.recipient ?? transaction.recipient;
+  transaction.amount = result.data.amount ?? transaction.amount;
+
+  const isSaved = saveTransactions(transactions);
+  if (!isSaved) {
+    return res.status(500).json({ error: "Internal server error: Could not update transaction." });
+  }
+
+  return res.status(200).json({
+    message: "Transaction updated successfully!",
+    transaction
+  });
 });
 
 // 5. POST - Create transaction
@@ -232,8 +268,8 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
   }
 });
 
-// 7. DELETE transaction
-app.delete("/transactions/:id", async (req: Request, res: Response) => {
+// 4. GET one transaction by ID
+app.get("/transactions/:id", async (req: Request, res: Response) => {
   const transactionId = Number(req.params.id);
 
   if (
@@ -241,34 +277,66 @@ app.delete("/transactions/:id", async (req: Request, res: Response) => {
     transactionId <= 0
   ) {
     return res.status(400).json({
-      error: "Invalid transaction ID."
+      error: "Invalid transaction ID format. Must be a positive integer."
     });
   }
 
   try {
-    const result = await pool.query(
-      "DELETE FROM transactions WHERE id = $1 RETURNING id",
-      [transactionId]
-    );
+    const transaction = await findTransactionById(transactionId);
 
-    if (result.rows.length === 0) {
+    if (!transaction) {
       return res.status(404).json({
         message: "Transaction not found"
       });
     }
 
-    return res.status(200).json({
-      message: "Transaction deleted successfully!"
-    });
+    return res.status(200).json(transaction);
   } catch (error) {
-    console.error("Error deleting transaction:", error);
+    console.error("Error fetching transaction:", error);
     return res.status(500).json({
-      error: "Could not delete transaction."
+      error: "Could not fetch transaction"
     });
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+
+  // 7. DELETE transaction
+  app.delete("/transactions/:id", async (req: Request, res: Response) => {
+    const transactionId = Number(req.params.id);
+
+    if (
+      !Number.isSafeInteger(transactionId) ||
+      transactionId <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid transaction ID."
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        "DELETE FROM transactions WHERE id = $1 RETURNING id",
+        [transactionId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message: "Transaction not found"
+        });
+      }
+
+      return res.status(200).json({
+        message: "Transaction deleted successfully!"
+      });
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      return res.status(500).json({
+        error: "Could not delete transaction."
+      });
+    }
+  });
+
+  // Start server
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
