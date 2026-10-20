@@ -10,6 +10,7 @@ import path from "path";
 import { z } from "zod";
 import { pool } from "./db.js";
 import { categories } from "./categories.js";
+import { error } from "console";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -17,6 +18,7 @@ const port = Number(process.env.PORT || 3000);
 app.use(express.json());
 
 
+const transactionIdSchema = z.coerce.number().int().positive();
 const transactionSchema =
   z.object({
     date: z.iso.date(),
@@ -28,6 +30,10 @@ const transactionSchema =
 const transactionUpdateSchema = transactionSchema.partial();
 const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
 
+const dateQuerySchema = z.string().refine(isValidDate,
+  {
+    message: "Invalid date. Use YYYY-MM-DD",
+  });
 // Try-catch tillagd här kring fs.writeFileSync
 const saveTransactions = (allTransactions: Transaction[]): boolean => {
   try {
@@ -87,6 +93,28 @@ app.get("/", (req: Request, res: Response) => {
 app.get("/transactions", async (req: Request, res: Response) => {
   try {
     const { from, to } = req.query;
+    const fromResult = from === undefined ? null :
+      dateQuerySchema.safeParse(from);
+    const toResult = to === undefined ? null :
+      dateQuerySchema.safeParse(to);
+    if (fromResult && !fromResult.success) {
+      return res.status(400).json({
+        error: "Invalid start date",
+      });
+    }
+    if (toResult && !toResult.success) {
+      return res.status(400).json({
+        error: "Invalid end date",
+      });
+    }
+    if (fromResult?.success && toResult?.success && fromResult.data > toResult.data
+    ) {
+      return res.status(400).json({
+        error: "Start date cannot be after end date",
+      });
+    }
+
+
 
     let query = transactionQuery;
     const values: string[] = [];
@@ -125,11 +153,6 @@ app.get("/classifications", (req: Request, res: Response) => {
   return res.status(200).json(categories);
 });
 
-
-
-
-// --- 5. PUT - Update transaction ---
-
 app.put("/transactions/:id", (req: Request, res: Response) => {
 
   const result = transactionUpdateSchema.safeParse(req.body);
@@ -137,11 +160,17 @@ app.put("/transactions/:id", (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({
       error: result.error.issues,
-
     });
   }
 
-  const transactionId = Number(req.params.id);
+  const idResult = transactionIdSchema.safeParse(req.params.id);
+  if (!idResult.success) {
+    return res.status(400).json({
+      error: "Invalid transaction ID",
+    });
+  }
+
+  const transactionId = idResult.data;
   const transaction = transactions.find((t: Transaction) => t.id === transactionId);
   if (!transaction) {
     return res.status(404).json({
@@ -300,43 +329,43 @@ app.get("/transactions/:id", async (req: Request, res: Response) => {
 });
 
 
-  // 7. DELETE transaction
-  app.delete("/transactions/:id", async (req: Request, res: Response) => {
-    const transactionId = Number(req.params.id);
+// 7. DELETE transaction
+app.delete("/transactions/:id", async (req: Request, res: Response) => {
+  const transactionId = Number(req.params.id);
 
-    if (
-      !Number.isSafeInteger(transactionId) ||
-      transactionId <= 0
-    ) {
-      return res.status(400).json({
-        error: "Invalid transaction ID."
+  if (
+    !Number.isSafeInteger(transactionId) ||
+    transactionId <= 0
+  ) {
+    return res.status(400).json({
+      error: "Invalid transaction ID."
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM transactions WHERE id = $1 RETURNING id",
+      [transactionId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Transaction not found"
       });
     }
 
-    try {
-      const result = await pool.query(
-        "DELETE FROM transactions WHERE id = $1 RETURNING id",
-        [transactionId]
-      );
+    return res.status(200).json({
+      message: "Transaction deleted successfully!"
+    });
+  } catch (error) {
+    console.error("Error deleting transaction:", error);
+    return res.status(500).json({
+      error: "Could not delete transaction."
+    });
+  }
+});
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          message: "Transaction not found"
-        });
-      }
-
-      return res.status(200).json({
-        message: "Transaction deleted successfully!"
-      });
-    } catch (error) {
-      console.error("Error deleting transaction:", error);
-      return res.status(500).json({
-        error: "Could not delete transaction."
-      });
-    }
-  });
-
-  // Start server
-  app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-  });
+// Start server
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
