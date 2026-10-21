@@ -1,13 +1,13 @@
-# Internet Bank API & CLI
+# Internet Bank API & CLI (Sprint 2)
  
 ## 1. What the application does
-A simple backend banking application built with Express and TypeScript.
+A backend banking application built with Express, TypeScript, and **PostgreSQL**.
 
-The application allows users to manage bank transactions through an API and an interactive terminal application (CLI).
+The application allows users to manage bank transactions through a REST API and an interactive terminal application (CLI).
+Data is persistently stored in a relational PostgreSQL database running in Docker.
 
 Users can:
-
-- View all transactions
+- View all transactions (with their database classifications via JOIN)
 - View one transaction by ID
 - Add transactions
 - Update transactions
@@ -17,95 +17,108 @@ Users can:
  
  
 ### Tech Stack
-* Backend: Node.js, Express, TypeScript
+- **Backend:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL (hosted in Docker with persistent volume)
+- **Validation:** Zod (for request body, params, and queries)
+- **Terminal Client:** `@inquirer/prompts` for interactive menus
+- **Code Quality:** ESLint, TypeScript compiler (`tsc`)
  
-* Data Storage: JSON file (transactions.json)
- 
-* Terminal Client: @inquirer/prompts for interactive menus.
- 
-## 2. How to start the API
-Clone the repository and install dependencies.
+## 2. Prerequisites & Setup
+
+Make sure you have **Node.js** and **Docker** installed on your computer.
+
+#### 1, Clone the repository and install dependencies.
 Type in the terminal:
 ```
 npm install
 ```
-### Start the server:
- 
-Type into the terminal:
+
+#### 2, Create your environment variables file based on the example:
+```
+cp .env.example .env
+```
+(Adjust the values in .env if needed, e.g., database port or credentials).
+
+
+#### 3, Start the PostgreSQL database using Docker Compose:
+```
+docker compose up -d
+```
+
+## 3. How to Start the API
+
+Start the API Server:
  
 ```
 npm run dev 
 ```
-## 3. How to start the terminal application
+## 4. How to start the terminal application
 Open a NEW terminal and type in:
  
 ```
 npx tsx src/cli.ts
 ```
-## 4. API Endpoints Documentation
+## 5. API Endpoints Documentation
  
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/transactions` | Get all transactions |
-| GET | `/transactions/:id` | Get one transaction |
-| POST | `/transactions` | Create transaction |
-| PUT | `/transactions/:id` | Update transaction
-| DELETE | `/transactions/:id` | Delete transaction |
-| GET | `/classifications` | Get classifications |
+| Method | Endpoint | Description | Zod Validation |
+| :--- | :--- | :--- | :--- |
+| GET | `/transactions` | Get all transactions | Query params (`startDate`, `endDate`) |
+| GET | `/transactions/:id` | Get one transaction | Route param (`id`) |
+| POST | `/transactions` | Create transaction | Request body (`date`, `recipient`, `amount`) |
+| PUT | `/transactions/:id` | Update transaction | Route param (`id`) & Request body |
+| DELETE | `/transactions/:id` | Delete transaction | Route param (`id`) |
+| GET | `/classifications` | Get classifications | None |
  
-## 5. How to use the terminal application
+## 6. How to use the terminal application
  
-When running npx tsx src/cli.ts, you are presented with a menu:
+When running npx tsx src/cli.ts, you are presented with an interactive menu:
  
-1. **View transactions** - Lists all stored transactions.
+1. **View transactions** - Lists all stored transactions fetched from PostgreSQL.
  
 2. **View one transaction** - Shows details for a specific ID.
  
-3. **Add transaction** - Prompts for date, recipient, and amount, then saves it via the API.
+3. **Add transaction** - Prompts for date, recipient, and amount, validates input and saves it via the API.
  
 4. **Update transaction** - Modifies an existing transaction.
  
 5. **Delete transaction** - Removes a transaction by ID.
  
-6. **Filter transactions by date** - Shows transactions within a specific date range.
+6. **Filter transactions by date** - Shows transactions within a specific validated date range.
  
 7. **Exit** - Closes the application.
  
  
-## 6. Important Decisions
+## 7. Important Decisions & Technical Choices
+
+### How is data stored?
+Data is no longer stored in local JSON files. Instead, transactions and classification mappings are stored in relational PostgreSQL tables inside a Docker container. A named volume ensures data persists even if the container is restarted or stopped.
+
+### How does classification work?
+Outgoing transactions (negative amounts) are matched against the classification table using a SQL JOIN, categorizing them into groups (Household, Transport, Food, Entertainment, Unknown). Positive amounts (income) do not receive a classification.
+
+### How is input validated and secured?
+
+- **Zod:** Every incoming request body, route parameter, and query parameter is strictly validated using Zod schemas. Invalid input immediately returns an HTTP 400 Bad Request with a descriptive error message.
+
+- **Security:** All database queries involving user input use parameterized queries ($1, $2, etc.) via the pg package to completely prevent SQL injection vulnerabilities.
+
+### Code Quality Checks:
+Before pushing or merging code, you can verify that everything passes linting and type-checking by running:
+```
+npm run lint
+npm run typecheck
+
+```
  
-Explain decisions you made when the requirements were unclear.
-For example: <br>
- 
-**Are start/end dates included?**
- 
-Yes, both the start and end dates are inclusive. The filtering logic uses >= and <=, meaning any transactions occurring precisely on the start or end date will be included in the results.
- 
-**What happens with invalid dates?**
- 
-The terminal client validates the input format using Date.parse(). If an invalid date format (anything other than YYYY-MM-DD) is entered, the application prints an error message ("Invalid date. Please use YYYY-MM-DD.") and returns to the main menu without crashing.
- 
-**What happens when there is no classification?**
-Outgoing transactions (negative amounts) are matched against classifications.json. If no match is found, the category defaults to "Unknown". Positive amounts (income) do not receive a classification.
- 
-**Which fields are required when creating a transaction?**
-date (Format: YYYY-MM-DD), recipient (string), and amount (number). An id is automatically generated.
- 
-**Which fields can be updated?**
-date, recipient, and amount can all be updated.
- 
-**What happens when a transaction does not exist?**
-If a requested ID does not exist on GET, PUT, or DELETE, the API responds with HTTP status 404 Not Found.
- 
-**Which HTTP status codes did you choose?**
+**HTTP Status Codes Used:**
 * **200 OK**: Successful retrieval, update, or deletion.
  
 * **201 Created**: Successful creation of a transaction.
  
-* **400 Bad Request**: Missing required fields or invalid ID format.
+* **400 Bad Request**: Validation failure (Zod)
+ or invalid input format. 
+* **404 Not Found**: Resource ID does not exist in the database.
  
-* **404 Not Found**: Transaction ID does not exist.
- 
-* **500 Internal Server Error**: File system writing errors when saving to transactions.json.
+* **500 Internal Server Error**: Unexpected database or server errors.
 
 
