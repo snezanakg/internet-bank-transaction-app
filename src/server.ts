@@ -1,11 +1,5 @@
-
 import express from "express";
 import type { Request, Response } from "express";
-
-import { transactions } from "./data.js";
-import type { Transaction } from "./data.js";
-
-import fs from "fs";
 import { z } from "zod";
 import { pool } from "./db.js";
 import { categories } from "./categories.js";
@@ -15,33 +9,10 @@ const port = Number(process.env.PORT || 3000);
 
 app.use(express.json());
 
+const dateQuerySchema = z.string().refine(isValidDate, {
+  message: "Invalid date. Use YYYY-MM-DD",
+});
 
-const transactionIdSchema = z.coerce.number().int().positive();
-const transactionSchema =
-  z.object({
-    date: z.iso.date(),
-    recipient: z.string().min(1, "Recipient is required"),
-    amount: z.number().refine((value) => value !== 0, {
-      message: "Amount cannot be zero",
-    }),
-  })
-const transactionUpdateSchema = transactionSchema.partial();
-const transactionsFilePath = new URL("../data/transactions.json", import.meta.url);
-
-const dateQuerySchema = z.string().refine(isValidDate,
-  {
-    message: "Invalid date. Use YYYY-MM-DD",
-  });
-// Try-catch tillagd här kring fs.writeFileSync
-const saveTransactions = (allTransactions: Transaction[]): boolean => {
-  try {
-    fs.writeFileSync(transactionsFilePath, JSON.stringify(allTransactions, null, 2), "utf-8");
-    return true;
-  } catch (error) {
-    console.error("Error saving transactions to file:", error);
-    return false;
-  }
-};
 // Validate date format
 function isValidDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -151,45 +122,6 @@ app.get("/classifications", (req: Request, res: Response) => {
   return res.status(200).json(categories);
 });
 
-app.put("/transactions/:id", (req: Request, res: Response) => {
-
-  const result = transactionUpdateSchema.safeParse(req.body);
-
-  if (!result.success) {
-    return res.status(400).json({
-      error: result.error.issues,
-    });
-  }
-
-  const idResult = transactionIdSchema.safeParse(req.params.id);
-  if (!idResult.success) {
-    return res.status(400).json({
-      error: "Invalid transaction ID",
-    });
-  }
-
-  const transactionId = idResult.data;
-  const transaction = transactions.find((t: Transaction) => t.id === transactionId);
-  if (!transaction) {
-    return res.status(404).json({
-      message: "Transaction not found"
-    });
-  }
-  transaction.date = result.data.date ?? transaction.date;
-  transaction.recipient = result.data.recipient ?? transaction.recipient;
-  transaction.amount = result.data.amount ?? transaction.amount;
-
-  const isSaved = saveTransactions(transactions);
-  if (!isSaved) {
-    return res.status(500).json({ error: "Internal server error: Could not update transaction." });
-  }
-
-  return res.status(200).json({
-    message: "Transaction updated successfully!",
-    transaction
-  });
-});
-
 // 5. POST - Create transaction
 app.post("/transactions", async (req: Request, res: Response) => {
   const { date, recipient, amount } = req.body ?? {};
@@ -244,6 +176,32 @@ app.put("/transactions/:id", async (req: Request, res: Response) => {
   }
 
   const { date, recipient, amount } = req.body ?? {};
+
+// Reject empty update requests
+if (
+  date === undefined &&
+  recipient === undefined &&
+  amount === undefined
+) {
+  return res.status(400).json({
+    error: "At least one field is required to update a transaction."
+  });
+}
+
+// Keep your existing validation below
+if (
+  (date !== undefined &&
+    (typeof date !== "string" || !isValidDate(date))) ||
+  (recipient !== undefined &&
+    (typeof recipient !== "string" || !recipient.trim())) ||
+  (amount !== undefined &&
+    (typeof amount !== "number" || !Number.isFinite(amount)))
+) {
+  return res.status(400).json({
+    error: "Invalid transaction data."
+  });
+}
+
 
   if (
     (date !== undefined &&
